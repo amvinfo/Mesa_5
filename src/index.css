@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gob-red: #d4272e;
+  --color-gob-blue: #1a3a6c;
+  --color-gob-dark: #1a1a2e;
+  --color-gob-light: #f5f7fa;
+  --color-gob-accent: #2563eb;
+  --color-gob-green: #16a34a;
+  --color-gob-yellow: #f59e0b;
+  --color-gob-orange: #ea580c;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #f5f7fa;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
