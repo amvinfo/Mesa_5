@@ -1,12 +1,15 @@
 import React from 'react';
 import { useData } from '../context/DataContext';
 import { Ticket, Clock, CheckCircle, AlertTriangle, UserX, Calendar, Timer, BarChart3 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 export default function Dashboard() {
-  const { getKPIs, tickets } = useData();
+  const { getKPIs, tickets, getChartData } = useData();
   const kpis = getKPIs();
-
+  const chartData = getChartData();
   const recentTickets = tickets.slice(0, 5);
+
+  const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4'];
 
   const kpiCards = [
     { label: 'TOTAL TICKETS', value: kpis.total, icon: Ticket, color: 'bg-blue-500', lightColor: 'bg-blue-50', textColor: 'text-blue-700' },
@@ -20,20 +23,13 @@ export default function Dashboard() {
   ];
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      abierto: 'bg-blue-100 text-blue-700',
-      en_proceso: 'bg-yellow-100 text-yellow-700',
-      resuelto: 'bg-green-100 text-green-700',
-      cerrado: 'bg-gray-100 text-gray-700'
-    };
+    const colors: Record<string, string> = { abierto: 'bg-blue-100 text-blue-700', en_proceso: 'bg-yellow-100 text-yellow-700', resuelto: 'bg-green-100 text-green-700', cerrado: 'bg-gray-100 text-gray-700' };
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
-
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = { abierto: 'Abierto', en_proceso: 'En Proceso', resuelto: 'Resuelto', cerrado: 'Cerrado' };
     return labels[status] || status;
   };
-
   const getPriorityDot = (priority: string) => {
     const colors: Record<string, string> = { baja: 'bg-gray-400', media: 'bg-blue-400', alta: 'bg-orange-400', urgente: 'bg-red-500' };
     return <span className={`w-2.5 h-2.5 rounded-full ${colors[priority] || 'bg-gray-400'}`} />;
@@ -62,6 +58,51 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Charts */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        {/* Pie - Category */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 className="font-semibold text-gray-800 mb-4 text-sm">Tickets por Categoría</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={chartData.byCategory} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false} fontSize={10}>
+                {chartData.byCategory.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Pie - Priority */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 className="font-semibold text-gray-800 mb-4 text-sm">Tickets por Prioridad</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={chartData.byPriority} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false} fontSize={11}>
+                {chartData.byPriority.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Line - Trend */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 className="font-semibold text-gray-800 mb-4 text-sm">Tendencia (Últimos 7 días)</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={chartData.trend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="date" fontSize={10} />
+              <YAxis fontSize={10} />
+              <Tooltip />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+              <Line type="monotone" dataKey="created" stroke="#3b82f6" strokeWidth={2} name="Creados" dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} name="Resueltos" dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* Recent Tickets */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
@@ -86,15 +127,10 @@ export default function Dashboard() {
                   <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{ticket.requesterName}</td>
                   <td className="px-4 py-3 text-gray-800 max-w-[200px] truncate">{ticket.subject}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">
-                    <div className="flex items-center gap-2">
-                      {getPriorityDot(ticket.priority)}
-                      <span className="text-xs capitalize">{ticket.priority}</span>
-                    </div>
+                    <div className="flex items-center gap-2">{getPriorityDot(ticket.priority)}<span className="text-xs capitalize">{ticket.priority}</span></div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
-                      {getStatusLabel(ticket.status)}
-                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>{getStatusLabel(ticket.status)}</span>
                   </td>
                 </tr>
               ))}
