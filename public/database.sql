@@ -294,7 +294,46 @@ INSERT INTO `configuracion` (`clave`, `valor`) VALUES
 ('ticket_allow_attachments', '1'), ('ticket_max_attachments', '5'),
 ('ticket_max_file_size_mb', '10'), ('ticket_allowed_extensions', 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip'),
 ('kb_articles_per_category', '10'), ('kb_preview_chars', '150'),
-('kb_popular_articles', '5'), ('kb_recent_articles', '5');
+('kb_popular_articles', '5'), ('kb_recent_articles', '5'),
+('logo_url', ''), ('password_min_length', '8'),
+('password_require_uppercase', '1'), ('password_require_numbers', '1'),
+('password_require_special', '0'), ('default_page_size', '15'),
+('table_density', 'normal'), ('theme_default', 'light'),
+('support_email', 'soporte@gob.cl');
+
+-- TABLA: user_preferences (preferencias de usuario para dashboard)
+CREATE TABLE IF NOT EXISTS `user_preferences` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL,
+  `dashboard_layout` TEXT,
+  `theme` VARCHAR(20) DEFAULT 'light',
+  `table_density` VARCHAR(20) DEFAULT 'normal',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`user_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- TABLA: translations (traducciones del sistema)
+CREATE TABLE IF NOT EXISTS `translations` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `language` VARCHAR(10) NOT NULL,
+  `key_name` VARCHAR(100) NOT NULL,
+  `value` TEXT NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `lang_key` (`language`, `key_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Insertar traducciones por defecto
+INSERT INTO `translations` (`language`, `key_name`, `value`) VALUES
+('es', 'dashboard', 'Panel de Resumen'),
+('es', 'tickets', 'Gestión de Tickets'),
+('es', 'knowledge', 'Base de Conocimiento'),
+('es', 'admin', 'Administración'),
+('en', 'dashboard', 'Dashboard'),
+('en', 'tickets', 'Ticket Management'),
+('en', 'knowledge', 'Knowledge Base'),
+('en', 'admin', 'Administration')
+ON DUPLICATE KEY UPDATE `value` = `value`;
 
 -- =============================================
 -- CONSULTAS PARA KPIs

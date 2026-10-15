@@ -72,6 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 3) {
             $config .= "date_default_timezone_set(TIMEZONE);\n";
             $config .= "if (session_status() === PHP_SESSION_NONE) session_start();\n";
             file_put_contents(__DIR__ . '/includes/config.php', $config);
+            
+            // Crear directorio para uploads de logos
+            if (!is_dir(__DIR__ . '/assets/img')) {
+                mkdir(__DIR__ . '/assets/img', 0755, true);
+            }
+            
             file_put_contents(__DIR__ . '/.installed', date('Y-m-d H:i:s'));
             
             $success[] = '¡Instalación completada exitosamente!';

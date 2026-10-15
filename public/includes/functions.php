@@ -60,3 +60,121 @@ function addEmailLog($to, $subject, $template, $status = 'sent', $ticketId = nul
     $pdo = getDB();
     $pdo->prepare("INSERT INTO email_logs (to_email, subject, template_key, status, ticket_id) VALUES (?, ?, ?, ?, ?)")->execute([$to, $subject, $template, $status, $ticketId]);
 }
+
+// Enviar correo de notificación a soporte central al crear ticket
+function notifySupportCenter($ticketData) {
+    $pdo = getDB();
+    $config = [];
+    $stmt = $pdo->query("SELECT clave, valor FROM configuracion WHERE clave = 'support_email'");
+    $row = $stmt->fetch();
+    $supportEmail = $row ? $row['valor'] : 'soporte@gob.cl';
+    
+    // Registrar en log de correos
+    addEmailLog(
+        $supportEmail,
+        "Nuevo ticket creado: {$ticketData['ticket_number']}",
+        'new_ticket_support',
+        'sent',
+        $ticketData['id'] ?? null
+    );
+    
+    // Crear notificación interna para supervisores
+    $pdo->prepare("INSERT INTO notificaciones (tipo, titulo, mensaje, for_role, ticket_id) VALUES (?, ?, ?, ?, ?)")
+        ->execute(['system', 'Nuevo ticket sin asignar', "Ticket {$ticketData['ticket_number']} requiere atención", 'supervisor', $ticketData['id'] ?? null]);
+}
+
+// Verificar si el técnico puede ver el ticket (regla de visibilidad)
+function canTechnicianViewTicket($ticketId, $userId) {
+    $pdo = getDB();
+    $stmt = $pdo->prepare("SELECT asignado_a FROM tickets WHERE id = ?");
+    $stmt->execute([$ticketId]);
+    $ticket = $stmt->fetch();
+    
+    // Técnicos solo ven tickets asignados a ellos
+    return $ticket && $ticket['asignado_a'] == $userId;
+}
+
+// Obtener tickets visibles según rol
+function getVisibleTickets($userId, $role) {
+    $pdo = getDB();
+    
+    if ($role === 'tecnico') {
+        // Técnicos solo ven sus tickets asignados
+        $stmt = $pdo->prepare("SELECT t.*, c.nombre as categoria_nombre FROM tickets t LEFT JOIN categorias c ON t.categoria_id = c.id WHERE t.asignado_a = ? ORDER BY t.created_at DESC");
+        $stmt->execute([$userId]);
+    } else {
+        // Supervisores y Admins ven todos los tickets
+        $stmt = $pdo->query("SELECT t.*, c.nombre as categoria_nombre FROM tickets t LEFT JOIN categorias c ON t.categoria_id = c.id ORDER BY t.created_at DESC");
+    }
+    
+    return $stmt->fetchAll();
+}
+
+// Obtener preferencias de usuario
+function getUserPreferences($userId) {
+    $pdo = getDB();
+    $stmt = $pdo->prepare("SELECT * FROM user_preferences WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $prefs = $stmt->fetch();
+    
+    return $prefs ?: [
+        'theme' => 'light',
+        'table_density' => 'normal',
+        'dashboard_layout' => null
+    ];
+}
+
+// Guardar preferencias de usuario
+function saveUserPreferences($userId, $theme, $density, $layout = null) {
+    $pdo = getDB();
+    $stmt = $pdo->prepare("SELECT id FROM user_preferences WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    
+    if ($stmt->fetch()) {
+        $pdo->prepare("UPDATE user_preferences SET theme = ?, table_density = ?, dashboard_layout = ? WHERE user_id = ?")
+            ->execute([$theme, $density, $layout, $userId]);
+    } else {
+        $pdo->prepare("INSERT INTO user_preferences (user_id, theme, table_density, dashboard_layout) VALUES (?, ?, ?, ?)")
+            ->execute([$userId, $theme, $density, $layout]);
+    }
+}
+
+// Validar contraseña según políticas
+function validatePassword($password) {
+    $pdo = getDB();
+    $config = [];
+    $stmt = $pdo->query("SELECT clave, valor FROM configuracion WHERE clave IN ('password_min_length', 'password_require_uppercase', 'password_require_numbers', 'password_require_special')");
+    while ($row = $stmt->fetch()) {
+        $config[$row['clave']] = $row['valor'];
+    }
+    
+    $minLength = $config['password_min_length'] ?? 8;
+    $requireUpper = $config['password_require_uppercase'] ?? 1;
+    $requireNumbers = $config['password_require_numbers'] ?? 1;
+    $requireSpecial = $config['password_require_special'] ?? 0;
+    
+    if (strlen($password) < $minLength) {
+        return "La contraseña debe tener al menos $minLength caracteres";
+    }
+    
+    if ($requireUpper && !preg_match('/[A-Z]/', $password)) {
+        return "La contraseña debe contener al menos una letra mayúscula";
+    }
+    
+    if ($requireNumbers && !preg_match('/[0-9]/', $password)) {
+        return "La contraseña debe contener al menos un número";
+    }
+    
+    if ($requireSpecial && !preg_match('/[^A-Za-z0-9]/', $password)) {
+        return "La contraseña debe contener al menos un carácter especial";
+    }
+    
+    return true;
+}
+
+// Obtener gráfico de tickets por estado
+function getTicketsByStatus() {
+    $pdo = getDB();
+    $stmt = $pdo->query("SELECT estado as name, COUNT(*) as value FROM tickets GROUP BY estado");
+    return $stmt->fetchAll();
+}
