@@ -1,127 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { DataProvider, useData } from './context/DataContext';
-import PublicPortal from './pages/PublicPortal';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import TicketManagement from './pages/TicketManagement';
-import TicketDetail from './pages/TicketDetail';
-import KnowledgeBase from './pages/KnowledgeBase';
-import AdminPanel from './pages/AdminPanel';
-import Profile from './pages/Profile';
-import Board from './pages/Board';
-import News from './pages/News';
-import Notifications from './pages/Notifications';
-import EmailLogs from './pages/EmailLogs';
-import Sidebar from './components/Sidebar';
-import { Menu, Bell, User } from 'lucide-react';
-
-function AppContent() {
-  const [hash, setHash] = useState(window.location.hash || '#/');
-  const { user, isAuthenticated } = useAuth();
-  const { notifications } = useData();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleHash = () => setHash(window.location.hash || '#/');
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
-
-  if (hash === '#/' || hash === '' || hash === '#') return <PublicPortal />;
-  if (hash === '#/login') {
-    if (isAuthenticated) { window.location.hash = '#/dashboard'; return null; }
-    return <Login />;
-  }
-
-  if (!isAuthenticated) { window.location.hash = '#/login'; return <Login />; }
-
-  const handleNavigate = (view: string) => {
-    setCurrentView(view);
-    setSelectedTicketId(null);
-  };
-
-  const handleSelectTicket = (id: string) => {
-    setSelectedTicketId(id);
-    setCurrentView('ticketDetail');
-  };
-
-  const unreadCount = notifications.filter(n => !n.read && (n.forRole === 'all' || n.forRole === user?.role)).length;
-
-  const viewLabels: Record<string, string> = {
-    dashboard: '📊 Resumen',
-    tickets: '🎫 Gestión de Tickets',
-    ticketDetail: '🎫 Detalle de Ticket',
-    board: '📌 Pizarra de Eventos',
-    news: '📰 Zona de Noticias',
-    notifications: '🔔 Notificaciones',
-    emails: '✉️ Registro de Correos',
-    knowledge: '📚 Base de Conocimiento',
-    admin: '⚙️ Administración',
-    profile: '🔄 Mi Perfil',
-  };
-
-  const renderContent = () => {
-    if (selectedTicketId) return <TicketDetail ticketId={selectedTicketId} onBack={() => { setSelectedTicketId(null); setCurrentView('tickets'); }} />;
-    switch (currentView) {
-      case 'dashboard': return <Dashboard />;
-      case 'tickets': return <TicketManagement onSelectTicket={handleSelectTicket} />;
-      case 'board': return <Board />;
-      case 'news': return <News />;
-      case 'notifications': return <Notifications />;
-      case 'emails': return <EmailLogs />;
-      case 'knowledge': return <KnowledgeBase />;
-      case 'admin': return user?.role === 'admin' ? <AdminPanel /> : <Dashboard />;
-      case 'profile': return <Profile />;
-      default: return <Dashboard />;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar currentView={currentView} onNavigate={handleNavigate} isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-      
-      <div className="lg:ml-64">
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-14 px-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden text-gray-600 hover:text-gray-800 p-1">
-              <Menu size={22} />
-            </button>
-            <div className="hidden lg:block">
-              <h2 className="text-sm font-medium text-gray-600">{viewLabels[selectedTicketId ? 'ticketDetail' : currentView] || ''}</h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => handleNavigate('notifications')} className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
-                <Bell size={18} />
-                {unreadCount > 0 && <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-gob-red text-white text-[10px] rounded-full flex items-center justify-center">{unreadCount}</span>}
-              </button>
-              <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
-                <div className="w-8 h-8 bg-gob-blue rounded-full flex items-center justify-center">
-                  <User size={14} className="text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-800 leading-tight">{user?.fullName}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role === 'admin' ? 'Administrador' : user?.role}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <main className="animate-fade-in">{renderContent()}</main>
-      </div>
-    </div>
-  );
-}
+import React from 'react';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <AppContent />
-      </DataProvider>
-    </AuthProvider>
+    <div className="min-h-screen bg-gradient-to-br from-[#1a3a6c] to-[#1a1a2e] flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <span className="text-4xl">🏛️</span>
+          </div>
+          <h1 className="text-3xl font-bold text-white">Gobierno de Chile</h1>
+          <p className="text-blue-200 mt-2 text-lg">Mesa de Ayuda TI - Sistema PHP Instalable</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Sistema Instalado Exitosamente</h2>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-800 mb-2">📦 Contenido del Paquete:</h3>
+            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+              <li><code className="bg-blue-100 px-1 rounded">install.php</code> - Instalador del sistema</li>
+              <li><code className="bg-blue-100 px-1 rounded">database.sql</code> - Script de base de datos</li>
+              <li><code className="bg-blue-100 px-1 rounded">index.php</code> - Portal Ciudadano</li>
+              <li><code className="bg-blue-100 px-1 rounded">login.php</code> - Acceso funcionarios</li>
+              <li><code className="bg-blue-100 px-1 rounded">dashboard.php</code> - Panel con KPIs y gráficos</li>
+              <li><code className="bg-blue-100 px-1 rounded">tickets.php</code> - Gestión con desglose inline</li>
+              <li><code className="bg-blue-100 px-1 rounded">ticket-detail.php</code> - Vista detallada</li>
+              <li><code className="bg-blue-100 px-1 rounded">board.php</code> - Pizarra colaborativa</li>
+              <li><code className="bg-blue-100 px-1 rounded">news.php</code> - Zona de Noticias</li>
+              <li><code className="bg-blue-100 px-1 rounded">notifications.php</code> - Notificaciones</li>
+              <li><code className="bg-blue-100 px-1 rounded">emails.php</code> - Registro de Correos</li>
+              <li><code className="bg-blue-100 px-1 rounded">knowledge.php</code> - Base de Conocimiento</li>
+              <li><code className="bg-blue-100 px-1 rounded">profile.php</code> - Mi Perfil</li>
+              <li><code className="bg-blue-100 px-1 rounded">admin.php</code> - Administración completa</li>
+            </ul>
+          </div>
+
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-green-800 mb-2">🚀 Instalación Rápida:</h3>
+            <ol className="text-sm text-green-700 space-y-1 list-decimal list-inside">
+              <li>Suba todos los archivos a <code className="bg-green-100 px-1 rounded">public_html/</code></li>
+              <li>Acceda a <code className="bg-green-100 px-1 rounded">install.php</code> desde su navegador</li>
+              <li>Complete los datos de conexión MySQL</li>
+              <li>¡Sistema listo para usar!</li>
+            </ol>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-yellow-800 mb-2">🔐 Credenciales por Defecto:</h3>
+            <div className="grid grid-cols-3 gap-2 text-xs text-center">
+              <div className="bg-yellow-100 rounded p-2"><p className="font-bold">Admin</p><p>admin</p></div>
+              <div className="bg-yellow-100 rounded p-2"><p className="font-bold">Supervisor</p><p>supervisor</p></div>
+              <div className="bg-yellow-100 rounded p-2"><p className="font-bold">Técnico</p><p>tecnico</p></div>
+            </div>
+            <p className="text-xs text-yellow-700 mt-2 text-center">Contraseña: admin123</p>
+          </div>
+
+          <div className="text-center">
+            <a href="install.php" className="inline-block bg-[#d4272e] hover:bg-red-700 text-white px-8 py-3 rounded-lg font-medium transition-colors">
+              🔧 Ir al Instalador (install.php)
+            </a>
+          </div>
+        </div>
+
+        <p className="text-center text-blue-200 text-xs mt-6">© {new Date().getFullYear()} Gobierno de Chile — Mesa de Ayuda TI v2.0</p>
+      </div>
+    </div>
   );
 }
